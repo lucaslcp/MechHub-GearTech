@@ -1,0 +1,16 @@
+@echo off
+rem Inicia o MechHub no Windows (cria o ambiente na primeira vez).
+cd /d "%~dp0"
+if not exist .venv (
+    echo Criando ambiente virtual...
+    python -m venv .venv || goto erro
+    .venv\Scripts\python.exe -m pip install -r requirements.txt || goto erro
+)
+echo Abrindo http://127.0.0.1:5000  (login: demo@mechhub.local / mechhub123)
+start "" http://127.0.0.1:5000
+.venv\Scripts\python.exe run.py
+goto fim
+:erro
+echo Nao foi possivel preparar o ambiente. Verifique se o Python 3 esta instalado.
+pause
+:fim

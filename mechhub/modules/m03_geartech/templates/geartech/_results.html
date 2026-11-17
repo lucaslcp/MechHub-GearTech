@@ -1,0 +1,79 @@
+{# Resultado completo de uma simulação: usado no detalhe e na pré-visualização do formulário. #}
+{% from "_macros.html" import kpi, chart %}
+{% macro results(result, charts) %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3">{{ kpi('Relação total i', result.total_ratio|num(3), '', result.kind|capitalize) }}</div>
+  <div class="col-6 col-lg-3">{{ kpi('Rotação de saída', result.output_speed_rpm|num(1), 'rpm', 'entrada ' ~ result.input_speed_rpm|num(0) ~ ' rpm') }}</div>
+  <div class="col-6 col-lg-3">{{ kpi('Torque de saída', result.output_torque_nm|num(1), 'N·m', 'entrada ' ~ result.input_torque_nm|num(2) ~ ' N·m') }}</div>
+  <div class="col-6 col-lg-3">{{ kpi('Potência de saída', result.output_power_kw|num(3), 'kW', 'η total ' ~ result.total_efficiency|pct(2)) }}</div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Caminho da potência</div>
+  <div class="card-body">
+    <div class="flow">
+      {% for s in result.shafts %}
+        <div class="node {{ 'input' if loop.first }} {{ 'output' if loop.last }}">
+          <div class="small fw-semibold">Eixo {{ s.index }}</div>
+          <div class="small text-muted-2">{{ s.label }}</div>
+          <div class="small mt-1"><b>{{ s.speed_rpm|num(1) }}</b> rpm</div>
+          <div class="small"><b>{{ s.torque_nm|num(2) }}</b> N·m</div>
+          <div class="small"><b>{{ s.power_kw|num(3) }}</b> kW</div>
+          <div class="small text-muted-2"><i class="bi bi-arrow-repeat"></i> {{ s.direction }}</div>
+        </div>
+        {% if not loop.last %}
+          {% set st = result.stages[loop.index0] %}
+          <div class="arrow"><i class="bi bi-arrow-right"></i>i = {{ st.ratio|num(3) }}<br>η = {{ st.efficiency|num(2) }}</div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% if result.warnings %}
+<div class="alert alert-warning">
+  <div class="fw-semibold mb-1"><i class="bi bi-exclamation-triangle me-1"></i>Alertas de projeto</div>
+  <ul class="mb-0 small">{% for w in result.warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<div class="row g-3 mb-3">
+  {% for fig in charts %}
+  <div class="col-lg-6"><div class="card"><div class="card-body p-2">{{ chart(fig, 'chart-' ~ loop.index) }}</div></div></div>
+  {% endfor %}
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">Estágios: relação, rotação, torque, potência e esforços</div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <thead><tr>
+        <th>#</th><th>Tipo</th><th class="num-cell">Z1/d1</th><th class="num-cell">Z2/d2</th><th class="num-cell">i</th>
+        <th class="num-cell">η</th><th class="num-cell">n saída (rpm)</th><th class="num-cell">T saída (N·m)</th>
+        <th class="num-cell">Perda (kW)</th><th class="num-cell">d1 / d2 (mm)</th><th class="num-cell">v (m/s)</th>
+        <th class="num-cell">Ft (N)</th><th class="num-cell">Fr (N)</th><th class="num-cell">Fa (N)</th>
+      </tr></thead>
+      <tbody>
+      {% for s in result.stages %}
+        <tr>
+          <td>{{ s.index }}</td>
+          <td><div class="fw-semibold small">{{ s.label }}</div><div class="small text-muted-2">{{ s.type_label }}</div></td>
+          <td class="num-cell">{{ s.driver|num(0 if s.driver == s.driver|int else 1) }}</td>
+          <td class="num-cell">{{ s.driven|num(0 if s.driven == s.driven|int else 1) }}</td>
+          <td class="num-cell fw-semibold">{{ s.ratio|num(3) }}</td>
+          <td class="num-cell">{{ s.efficiency|num(2) }}</td>
+          <td class="num-cell">{{ s.output_speed_rpm|num(1) }}</td>
+          <td class="num-cell">{{ s.output_torque_nm|num(2) }}</td>
+          <td class="num-cell">{{ s.power_loss_kw|num(3) }}</td>
+          <td class="num-cell">{% if s.driver_diameter_mm %}{{ s.driver_diameter_mm|num(1) }} / {{ s.driven_diameter_mm|num(1) }}{% else %}—{% endif %}</td>
+          <td class="num-cell">{{ s.peripheral_speed_ms|num(2) }}</td>
+          <td class="num-cell">{{ s.tangential_force_n|num(0) }}</td>
+          <td class="num-cell">{{ s.radial_force_n|num(0) }}</td>
+          <td class="num-cell">{{ s.axial_force_n|num(0) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endmacro %}

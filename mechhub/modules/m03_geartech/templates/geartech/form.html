@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% from "geartech/_results.html" import results %}
+{% block title %}{{ 'Editar ' ~ ts.name if ts else 'Novo conjunto' }} · GearTech{% endblock %}
+{% block breadcrumb %}Módulos · GearTech · {{ 'Editar conjunto' if ts else 'Novo conjunto' }}{% endblock %}
+
+{% macro stage_fields(st, n) %}
+<div class="stage-row" data-stage>
+  <span class="stage-number">Estágio <span data-stage-num>{{ n }}</span></span>
+  <div class="row g-2 align-items-end">
+    <div class="col-md-6">
+      <label class="form-label">Tipo de transmissão</label>
+      <select class="form-select form-select-sm" name="stage_type" data-type>
+        {% for key, t in stage_types.items() %}
+          <option value="{{ key }}" {{ 'selected' if st.stage_type == key }}>{{ t.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Descrição (opcional)</label>
+      <input class="form-control form-control-sm" name="stage_label" value="{{ st.label }}" placeholder="Ex.: 1º par">
+    </div>
+    <div class="col-md-2 text-md-end">
+      <button class="btn btn-sm btn-outline-danger" type="button" data-remove><i class="bi bi-trash me-1"></i>Remover</button>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label" data-driver-label>Z1</label>
+      <input class="form-control form-control-sm" name="driver" value="{{ st.driver if st.driver is not none }}" inputmode="decimal" required>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label" data-driven-label>Z2</label>
+      <input class="form-control form-control-sm" name="driven" value="{{ st.driven if st.driven is not none }}" inputmode="decimal" required>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label">Rendimento η</label>
+      <input class="form-control form-control-sm" name="efficiency" value="{{ st.efficiency if st.efficiency is not none }}" inputmode="decimal" data-eta>
+    </div>
+    <div class="col-6 col-md-2" data-geo="modulo">
+      <label class="form-label">Módulo m (mm)</label>
+      <input class="form-control form-control-sm" name="module_mm" value="{{ st.module_mm if st.module_mm is not none }}" inputmode="decimal" placeholder="opcional">
+    </div>
+    <div class="col-6 col-md-2" data-geo="passo">
+      <label class="form-label">Passo p (mm)</label>
+      <input class="form-control form-control-sm" name="pitch_mm" value="{{ st.pitch_mm if st.pitch_mm is not none }}" inputmode="decimal" placeholder="opcional">
+    </div>
+    <div class="col-6 col-md-2" data-geo="helice">
+      <label class="form-label">Hélice β (°)</label>
+      <input class="form-control form-control-sm" name="helix_angle_deg" value="{{ st.helix_angle_deg if st.helix_angle_deg not in (none, 0, 0.0) }}" inputmode="decimal" placeholder="ex.: 15">
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{% block content %}
+{% include "geartech/_nav.html" %}
+<form method="post" id="set-form" novalidate>
+  <div class="row g-4">
+    <div class="col-xl-4">
+      <div class="card">
+        <div class="card-header">1. Dados do conjunto</div>
+        <div class="card-body">
+          <div class="mb-2">
+            <label class="form-label" for="name">Nome do conjunto *</label>
+            <input class="form-control" id="name" name="name" value="{{ form.name }}" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label" for="application">Aplicação</label>
+            <input class="form-control" id="application" name="application" value="{{ form.application }}" placeholder="Ex.: esteira transportadora">
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="description">Descrição</label>
+            <textarea class="form-control" id="description" name="description" rows="3">{{ form.description }}</textarea>
+          </div>
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label" for="p">Potência de entrada (kW) *</label>
+              <input class="form-control" id="p" name="input_power_kw" value="{{ form.input_power_kw }}" inputmode="decimal" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="n">Rotação de entrada (rpm) *</label>
+              <input class="form-control" id="n" name="input_speed_rpm" value="{{ form.input_speed_rpm }}" inputmode="decimal" required>
+            </div>
+          </div>
+          <p class="small text-muted-2 mt-3 mb-0">Use vírgula ou ponto nos decimais. O rendimento pode ser digitado como 0,98 ou 98. Se ficar vazio, usa-se o valor típico do tipo.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-8">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span>2. Estágios (do motor para a saída)</span>
+          <button class="btn btn-sm btn-outline-primary" type="button" id="add-stage"><i class="bi bi-plus-lg me-1"></i>Adicionar estágio</button>
+        </div>
+        <div class="card-body pt-4" id="stages">
+          {% for st in form.stages %}{{ stage_fields(st, loop.index) }}{% endfor %}
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2 justify-content-end mt-3">
+        {% if ts %}<a class="btn btn-light border" href="{{ url_for('geartech.detail', set_id=ts.id) }}">Cancelar</a>{% endif %}
+        <button class="btn btn-outline-primary" name="action" value="preview" type="submit"><i class="bi bi-play-circle me-1"></i>Simular sem salvar</button>
+        <button class="btn btn-accent" name="action" value="save" type="submit"><i class="bi bi-check2-circle me-1"></i>{{ 'Salvar alterações' if ts else 'Salvar conjunto' }}</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<template id="stage-template">
+  {{ stage_fields({'stage_type': 'engrenagem_reta', 'label': '', 'driver': none, 'driven': none, 'efficiency': none,
+                   'module_mm': none, 'pitch_mm': none, 'helix_angle_deg': none}, 0) }}
+</template>
+
+{% if preview %}
+<hr class="my-4">
+<div class="d-flex align-items-center gap-2 mb-3">
+  <h2 class="h5 fw-bold mb-0">Pré-visualização da simulação</h2>
+  <span class="badge text-bg-secondary">não salva</span>
+</div>
+{{ results(preview, charts) }}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var TYPES = {
+    {% for key, t in stage_types.items() %}
+    "{{ key }}": {driver: {{ t.driver_label|tojson }}, driven: {{ t.driven_label|tojson }},
+                  eta: {{ t.default_efficiency }}, geometry: {{ t.geometry|tojson }}}{{ ',' if not loop.last }}
+    {% endfor %}
+  };
+  var box = document.getElementById("stages");
+
+  function refresh(row) {
+    var t = TYPES[row.querySelector("[data-type]").value];
+    row.querySelector("[data-driver-label]").textContent = t.driver;
+    row.querySelector("[data-driven-label]").textContent = t.driven;
+    row.querySelector("[data-eta]").placeholder = "típico " + String(t.eta).replace(".", ",");
+    row.querySelector('[data-geo="modulo"]').style.display = t.geometry === "modulo" ? "" : "none";
+    row.querySelector('[data-geo="passo"]').style.display = t.geometry === "passo" ? "" : "none";
+    row.querySelector('[data-geo="helice"]').style.display =
+      row.querySelector("[data-type]").value === "engrenagem_helicoidal" ? "" : "none";
+  }
+  function renumber() {
+    var rows = box.querySelectorAll("[data-stage]");
+    rows.forEach(function (r, i) { r.querySelector("[data-stage-num]").textContent = i + 1; });
+    rows.forEach(function (r) { r.querySelector("[data-remove]").disabled = rows.length === 1; });
+  }
+  function wire(row) {
+    row.querySelector("[data-type]").addEventListener("change", function () { refresh(row); });
+    row.querySelector("[data-remove]").addEventListener("click", function () { row.remove(); renumber(); });
+    refresh(row);
+  }
+  box.querySelectorAll("[data-stage]").forEach(wire);
+  document.getElementById("add-stage").addEventListener("click", function () {
+    if (box.querySelectorAll("[data-stage]").length >= 10) { alert("Máximo de 10 estágios."); return; }
+    var node = document.getElementById("stage-template").content.firstElementChild.cloneNode(true);
+    box.appendChild(node); wire(node); renumber();
+    node.querySelector('[name="driver"]').focus();
+  });
+  renumber();
+})();
+</script>
+{% endblock %}

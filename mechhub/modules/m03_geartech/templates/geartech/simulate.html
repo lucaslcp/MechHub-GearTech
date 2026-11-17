@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chart %}
+{% block title %}Simular {{ ts.name }} · GearTech{% endblock %}
+{% block breadcrumb %}Módulos · GearTech · {{ ts.name }} · Simulação{% endblock %}
+{% block content %}
+{% include "geartech/_nav.html" %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+  <div>
+    <h2 class="h5 fw-bold mb-0">Simulação de operação — {{ ts.name }}</h2>
+    <div class="small text-muted-2">{{ ts.stages|length }} estágio(s) · i total {{ result.total_ratio|num(3) }} · η total {{ result.total_efficiency|pct(2) }}</div>
+  </div>
+  <a class="btn btn-sm btn-light border" href="{{ url_for('geartech.detail', set_id=ts.id) }}"><i class="bi bi-arrow-left me-1"></i>Voltar ao conjunto</a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label" for="variable">Variar</label>
+        <select class="form-select" id="variable" name="variable">
+          <option value="rotacao" {{ 'selected' if params.variable == 'rotacao' }}>Rotação do motor (potência constante)</option>
+          <option value="potencia" {{ 'selected' if params.variable == 'potencia' }}>Potência do motor (rotação constante)</option>
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label" for="start">De</label>
+        <input class="form-control" id="start" name="start" value="{{ params.start }}" placeholder="25 % do nominal" inputmode="decimal">
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label" for="stop">Até</label>
+        <input class="form-control" id="stop" name="stop" value="{{ params.stop }}" placeholder="150 % do nominal" inputmode="decimal">
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label" for="points">Pontos</label>
+        <input class="form-control" id="points" name="points" value="{{ params.points }}" inputmode="numeric">
+      </div>
+      <div class="col-6 col-md-3"><button class="btn btn-primary w-100" type="submit"><i class="bi bi-play-fill me-1"></i>Simular</button></div>
+    </form>
+    <p class="small text-muted-2 mb-0 mt-2">A relação e o rendimento de cada estágio ficam fixos; o NumPy calcula todos os pontos de uma vez
+      (n₂ = n₁/i, T₁ = P/ω, T₂ = T₁·i·η).</p>
+  </div>
+</div>
+
+{% if sweep %}
+<div class="row g-3 mb-3">
+  {% for fig in charts %}
+  <div class="col-lg-6"><div class="card"><div class="card-body p-2">{{ chart(fig, 'sweep-' ~ loop.index) }}</div></div></div>
+  {% endfor %}
+</div>
+<div class="card">
+  <div class="card-header">Pontos simulados</div>
+  <div class="table-responsive" style="max-height: 420px">
+    <table class="table table-sm table-striped">
+      <thead class="sticky-top"><tr><th class="num-cell">P entrada (kW)</th><th class="num-cell">n entrada (rpm)</th><th class="num-cell">T entrada (N·m)</th>
+        <th class="num-cell">n saída (rpm)</th><th class="num-cell">T saída (N·m)</th><th class="num-cell">P saída (kW)</th></tr></thead>
+      <tbody>{% for k in range(sweep.x|length) %}
+        <tr><td class="num-cell">{{ sweep.input_power_kw[k]|num(3) }}</td><td class="num-cell">{{ sweep.input_speed_rpm[k]|num(1) }}</td>
+          <td class="num-cell">{{ sweep.input_torque_nm[k]|num(2) }}</td><td class="num-cell">{{ sweep.output_speed_rpm[k]|num(2) }}</td>
+          <td class="num-cell">{{ sweep.output_torque_nm[k]|num(2) }}</td><td class="num-cell">{{ sweep.output_power_kw[k]|num(3) }}</td></tr>
+      {% endfor %}</tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

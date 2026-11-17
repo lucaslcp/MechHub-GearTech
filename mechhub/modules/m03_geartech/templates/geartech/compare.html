@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chart %}
+{% block title %}Comparar · GearTech{% endblock %}
+{% block breadcrumb %}Módulos · GearTech · Comparar configurações{% endblock %}
+{% block content %}
+{% include "geartech/_nav.html" %}
+<div class="card mb-3">
+  <div class="card-header">Escolha dois ou mais conjuntos</div>
+  <div class="card-body">
+    {% if sets|length < 2 %}
+      <p class="mb-0">Cadastre pelo menos dois conjuntos para comparar. <a href="{{ url_for('geartech.create') }}">Novo conjunto</a></p>
+    {% else %}
+    <form method="get" class="d-flex flex-wrap gap-3 align-items-center">
+      {% for ts in sets %}
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="ids" value="{{ ts.id }}" id="s{{ ts.id }}" {{ 'checked' if ts.id in selected }}>
+        <label class="form-check-label" for="s{{ ts.id }}">{{ ts.name }}</label>
+      </div>
+      {% endfor %}
+      <button class="btn btn-primary btn-sm ms-auto" type="submit"><i class="bi bi-bar-chart-steps me-1"></i>Comparar</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+{% if comparison %}
+<div class="row g-3 mb-3">
+  {% for criterion, name in comparison.best.items() %}
+  <div class="col-6 col-lg-3"><div class="card kpi h-100"><div class="label">{{ criterion }}</div><div class="fw-bold mt-1">{{ name }}</div></div></div>
+  {% endfor %}
+</div>
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>Tabela comparativa</span>
+    <div class="d-flex gap-2">
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('geartech.compare_export', fmt='pdf', ids=ids) }}"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('geartech.compare_export', fmt='csv', ids=ids) }}"><i class="bi bi-filetype-csv me-1"></i>CSV</a>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover">
+      <thead><tr><th>Indicador</th>{% for n in comparison.names %}<th class="num-cell">{{ n }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for key, label, dec in metrics %}
+        <tr><td>{{ label }}</td>
+        {% for n in comparison.names %}
+          {% set v = comparison.df.loc[n, key] %}
+          <td class="num-cell">{{ (v * 100)|num(2) ~ ' %' if key == 'total_efficiency' else v|num(dec) }}</td>
+        {% endfor %}</tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="row g-3">
+  {% for fig in comparison.charts %}
+  <div class="col-lg-6"><div class="card"><div class="card-body p-2">{{ chart(fig, 'cmp-' ~ loop.index) }}</div></div></div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% from "_macros.html" import kpi %}
+{% block title %}Painel{% endblock %}
+{% block breadcrumb %}Painel · {{ current_user.organization.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Plataforma</div>
+    <h1>Olá, {{ current_user.name.split(' ')[0] }}</h1>
+    <div class="text-muted-2">Os 10 módulos compartilham login, banco de dados, navegação e identidade visual.</div>
+  </div>
+  <a class="btn btn-accent" href="{{ url_for('geartech.create') }}"><i class="bi bi-plus-lg me-1"></i>Novo conjunto de transmissão</a>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">{{ kpi('Conjuntos de transmissão', geartech.set_count, '', 'GearTech') }}</div>
+  <div class="col-6 col-lg-3">{{ kpi('Estágios cadastrados', geartech.stage_count) }}</div>
+  <div class="col-6 col-lg-3">{{ kpi('Cálculos rápidos salvos', geartech.quick_count) }}</div>
+  <div class="col-6 col-lg-3">{{ kpi('Conjuntos enviados ao MechCalc', geartech.published_count, '', 'Integração ativa') }}</div>
+</div>
+
+<div class="row g-4">
+  <div class="col-xl-8">
+    <h2 class="h6 fw-bold text-uppercase text-muted-2 mb-3">Módulos</h2>
+    <div class="row g-3">
+      {% for m in modules %}
+      <div class="col-sm-6 col-lg-4">
+        <a class="text-decoration-none text-reset" href="{{ url_for('dashboard.module_page', key=m.key) }}">
+          <div class="card module-card {{ 'active-mod' if m.status == 'ativo' }}">
+            <div class="card-body d-flex gap-3">
+              <div class="icon"><i class="bi bi-{{ m.icon }}"></i></div>
+              <div>
+                <div class="small text-muted-2">Módulo {{ m.number }}</div>
+                <div class="fw-semibold">{{ m.name }}</div>
+                <div class="small text-muted-2">{{ m.description }}</div>
+                <span class="badge mt-2 {{ 'text-bg-warning' if m.status == 'ativo' else 'text-bg-secondary' if m.status == 'integração demo' else 'text-bg-light border' }}">{{ m.status }}</span>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <h2 class="h6 fw-bold text-uppercase text-muted-2 mb-3">Atividade recente</h2>
+    <div class="card"><div class="card-body history-list py-2">
+      {% for e in events %}
+        <div class="item">
+          <span class="badge text-bg-light border me-1">{{ e.module }}</span>{{ e.description }}
+          <div class="small text-muted-2">{{ e.created_at|dt }}{% if e.user %} · {{ e.user.name }}{% endif %}</div>
+        </div>
+      {% else %}
+        <div class="item text-muted-2">Nenhuma atividade ainda.</div>
+      {% endfor %}
+    </div></div>
+    {% if geartech.latest %}
+    <h2 class="h6 fw-bold text-uppercase text-muted-2 mt-4 mb-3">Últimos conjuntos</h2>
+    <div class="list-group">
+      {% for ts in geartech.latest %}
+      <a class="list-group-item list-group-item-action" href="{{ url_for('geartech.detail', set_id=ts.id) }}">
+        <div class="fw-semibold">{{ ts.name }}</div>
+        <div class="small text-muted-2">{{ ts.stages|length }} estágio(s) · {{ ts.input_power_kw|num(2) }} kW · {{ ts.input_speed_rpm|num(0) }} rpm</div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

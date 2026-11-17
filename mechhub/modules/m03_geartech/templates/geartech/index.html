@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}GearTech{% endblock %}
+{% block breadcrumb %}Módulos · GearTech · Conjuntos{% endblock %}
+{% block content %}
+{% include "geartech/_nav.html" %}
+
+<form method="get" action="{{ url_for('geartech.compare') }}">
+<div class="card mb-4">
+  <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <span>Conjuntos de transmissão cadastrados ({{ rows|length }})</span>
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-outline-primary" type="submit"><i class="bi bi-bar-chart-steps me-1"></i>Comparar selecionados</button>
+      <a class="btn btn-sm btn-accent" href="{{ url_for('geartech.create') }}"><i class="bi bi-plus-lg me-1"></i>Novo conjunto</a>
+    </div>
+  </div>
+  {% if rows %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr>
+        <th style="width:2rem"></th><th>Conjunto</th><th class="num-cell">Estágios</th><th class="num-cell">Entrada</th>
+        <th class="num-cell">i total</th><th class="num-cell">Saída</th><th class="num-cell">η total</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody>
+      {% for ts, r in rows %}
+      <tr>
+        <td><input class="form-check-input" type="checkbox" name="ids" value="{{ ts.id }}" aria-label="Selecionar {{ ts.name }}"></td>
+        <td><a class="fw-semibold text-decoration-none" href="{{ url_for('geartech.detail', set_id=ts.id) }}">{{ ts.name }}</a>
+          <div class="small text-muted-2">{{ ts.application or 'Sem aplicação definida' }}</div></td>
+        <td class="num-cell">{{ ts.stages|length }}</td>
+        <td class="num-cell small">{{ ts.input_power_kw|num(2) }} kW<br>{{ ts.input_speed_rpm|num(0) }} rpm</td>
+        {% if r %}
+        <td class="num-cell fw-semibold">{{ r.total_ratio|num(3) }}</td>
+        <td class="num-cell small">{{ r.output_speed_rpm|num(1) }} rpm<br>{{ r.output_torque_nm|num(1) }} N·m</td>
+        <td class="num-cell">{{ r.total_efficiency|pct(1) }}</td>
+        <td>
+          {% if r.warnings %}<span class="badge text-bg-warning">{{ r.warnings|length }} alerta(s)</span>{% else %}<span class="badge text-bg-success">OK</span>{% endif %}
+          {% if ts.source_ref in published %}<span class="badge text-bg-info">no MechCalc</span>{% endif %}
+        </td>
+        {% else %}<td colspan="4" class="text-danger small">Dados inválidos — edite o conjunto.</td>{% endif %}
+        <td class="text-end"><a class="btn btn-sm btn-light border" href="{{ url_for('geartech.detail', set_id=ts.id) }}">Abrir</a></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card-body text-center py-5">
+    <p class="mb-3">Nenhum conjunto cadastrado ainda.</p>
+    <a class="btn btn-accent" href="{{ url_for('geartech.create') }}">Cadastrar o primeiro conjunto</a>
+  </div>
+  {% endif %}
+</div>
+</form>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header">Fórmulas usadas pelo módulo</div>
+      <div class="card-body small">
+        <div class="row g-3">
+          <div class="col-sm-6"><div class="fw-semibold mb-1">Relação de transmissão</div><span class="formula">i = Z₂ / Z₁ = d₂ / d₁</span></div>
+          <div class="col-sm-6"><div class="fw-semibold mb-1">Rotação</div><span class="formula">n₂ = n₁ / i</span></div>
+          <div class="col-sm-6"><div class="fw-semibold mb-1">Torque</div><span class="formula">T = P / ω,  ω = 2πn / 60</span></div>
+          <div class="col-sm-6"><div class="fw-semibold mb-1">Potência</div><span class="formula">P₂ = P₁ · η</span></div>
+          <div class="col-sm-6"><div class="fw-semibold mb-1">Torque de saída</div><span class="formula">T₂ = T₁ · i · η</span></div>
+          <div class="col-sm-6"><div class="fw-semibold mb-1">Vários estágios</div><span class="formula">i = Π iₖ ,  η = Π ηₖ</span></div>
+          <div class="col-sm-6"><div class="fw-semibold mb-1">Diâmetro primitivo</div><span class="formula">d = m · Z / cos β</span></div>
+          <div class="col-sm-6"><div class="fw-semibold mb-1">Forças no dente</div><span class="formula">Fₜ = 2T/d,  Fᵣ = Fₜ·tan α / cos β</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header">Histórico do GearTech</div>
+      <div class="card-body history-list py-2">
+        {% for e in events %}
+          <div class="item"><span class="badge text-bg-light border me-1">{{ e.action }}</span>{{ e.description }}
+            <div class="small text-muted-2">{{ e.created_at|dt }}{% if e.user %} · {{ e.user.name }}{% endif %}</div></div>
+        {% else %}<div class="item text-muted-2">Sem registros.</div>{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

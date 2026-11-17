@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "geartech/_results.html" import results %}
+{% block title %}{{ ts.name }} · GearTech{% endblock %}
+{% block breadcrumb %}Módulos · GearTech · {{ ts.name }}{% endblock %}
+{% block content %}
+{% include "geartech/_nav.html" %}
+
+<div class="card mb-3">
+  <div class="card-body d-flex flex-wrap justify-content-between gap-3">
+    <div>
+      <h2 class="h4 fw-bold mb-1">{{ ts.name }}</h2>
+      <div class="text-muted-2 small">{{ ts.application or 'Sem aplicação definida' }} · {{ ts.stages|length }} estágio(s) ·
+        entrada {{ ts.input_power_kw|num(2) }} kW a {{ ts.input_speed_rpm|num(0) }} rpm</div>
+      {% if ts.description %}<p class="mb-0 mt-2 small">{{ ts.description }}</p>{% endif %}
+      <div class="small text-muted-2 mt-1">Atualizado em {{ ts.updated_at|dt }}{% if ts.author %} · criado por {{ ts.author.name }}{% endif %}</div>
+    </div>
+    <div class="d-flex flex-wrap gap-2 align-items-start no-print">
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('geartech.simulate', set_id=ts.id) }}"><i class="bi bi-graph-up me-1"></i>Simular operação</a>
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('geartech.report_pdf', set_id=ts.id) }}"><i class="bi bi-file-earmark-pdf me-1"></i>Relatório PDF</a>
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('geartech.report_csv', set_id=ts.id) }}"><i class="bi bi-filetype-csv me-1"></i>CSV</a>
+      <a class="btn btn-sm btn-light border" href="{{ url_for('geartech.edit', set_id=ts.id) }}"><i class="bi bi-pencil me-1"></i>Editar</a>
+      <form method="post" action="{{ url_for('geartech.delete', set_id=ts.id) }}" data-confirm="Excluir o conjunto '{{ ts.name }}'? Esta ação não pode ser desfeita.">
+        <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash"></i></button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{{ results(result, charts) }}
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-link-45deg me-1"></i>Integração GearTech → MechCalc</span>
+        {% if published %}<span class="badge text-bg-info">publicado</span>{% else %}<span class="badge text-bg-light border">não publicado</span>{% endif %}
+      </div>
+      <div class="card-body">
+        <p class="small mb-2">Estes esforços por eixo são enviados ao MechCalc pelo serviço compartilhado
+          <code>shared.integration.publish_transmission_loads</code>, para o dimensionamento dos eixos à torção e flexão.</p>
+        <div class="table-responsive mb-3">
+          <table class="table table-sm">
+            <thead><tr><th>Eixo</th><th class="num-cell">n (rpm)</th><th class="num-cell">T (N·m)</th><th class="num-cell">Ft (N)</th><th class="num-cell">Fr (N)</th><th class="num-cell">Fa (N)</th></tr></thead>
+            <tbody>{% for l in loads %}
+              <tr><td>{{ l.shaft_label }}</td><td class="num-cell">{{ l.speed_rpm|num(1) }}</td><td class="num-cell">{{ l.torque_nm|num(2) }}</td>
+                <td class="num-cell">{{ l.tangential_force_n|num(0) }}</td><td class="num-cell">{{ l.radial_force_n|num(0) }}</td><td class="num-cell">{{ l.axial_force_n|num(0) }}</td></tr>
+            {% endfor %}</tbody>
+          </table>
+        </div>
+        <div class="d-flex gap-2 no-print">
+          <form method="post" action="{{ url_for('geartech.publish', set_id=ts.id) }}">
+            <button class="btn btn-sm btn-accent" type="submit"><i class="bi bi-send me-1"></i>{{ 'Reenviar ao MechCalc' if published else 'Enviar ao MechCalc' }}</button>
+          </form>
+          {% if published %}<a class="btn btn-sm btn-light border" href="{{ url_for('mechcalc.index') }}">Abrir no MechCalc</a>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header">Histórico de resultados (gravados no banco)</div>
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead><tr><th>Data</th><th class="num-cell">i</th><th class="num-cell">n saída</th><th class="num-cell">T saída</th><th class="num-cell">η</th></tr></thead>
+          <tbody>{% for snap in ts.snapshots[:8] %}
+            <tr><td class="small">{{ snap.created_at|dt }}</td><td class="num-cell">{{ snap.total_ratio|num(3) }}</td>
+              <td class="num-cell">{{ snap.output_speed_rpm|num(1) }}</td><td class="num-cell">{{ snap.output_torque_nm|num(1) }}</td>
+              <td class="num-cell">{{ snap.total_efficiency|pct(1) }}</td></tr>
+          {% endfor %}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ module.name }}{% endblock %}
+{% block breadcrumb %}Módulos · {{ module.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Módulo {{ module.number }}</div>
+    <h1><i class="bi bi-{{ module.icon }} me-2"></i>{{ module.name }}</h1>
+    <div class="text-muted-2">{{ module.description }}</div>
+  </div>
+</div>
+<div class="card"><div class="card-body p-4">
+  <h2 class="h6 fw-bold">Em desenvolvimento por outra dupla</h2>
+  <p class="mb-2">Este módulo já está registrado na plataforma (menu, painel e permissões). Quando a dupla responsável
+    entregar o Blueprint, basta preencher <code>endpoint</code> em <code>mechhub/core/registry.py</code>.</p>
+  <p class="small text-muted-2 mb-0">Contrato: dados compartilhados em <code>mechhub/shared/contracts.py</code>,
+    serviços em <code>mechhub/shared/integration.py</code>. Nenhum módulo acessa tabelas privadas de outro.</p>
+</div></div>
+{% endblock %}

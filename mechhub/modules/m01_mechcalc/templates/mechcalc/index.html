@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}MechCalc · integração{% endblock %}
+{% block breadcrumb %}Módulos · MechCalc · Eixos (dados do GearTech){% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="eyebrow">Módulo 1 · Resistência dos materiais</div>
+    <h1><i class="bi bi-rulers me-2"></i>MechCalc</h1>
+    <div class="text-muted-2">Versão de demonstração: mostra o lado que recebe os dados da integração GearTech → MechCalc.</div>
+  </div>
+</div>
+<div class="alert alert-light border small">
+  O MechCalc completo é desenvolvido por outra dupla. Esta tela lê os esforços <b>somente</b> pelo serviço compartilhado
+  <code>shared.integration.list_transmission_loads()</code>, sem acessar as tabelas privadas do GearTech.
+</div>
+
+<div class="row g-4">
+  <div class="col-xl-7">
+    <div class="card">
+      <div class="card-header">Esforços recebidos do GearTech ({{ loads|length }} eixos)</div>
+      {% if loads %}
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle">
+          <thead><tr><th>Conjunto / eixo</th><th class="num-cell">n (rpm)</th><th class="num-cell">T (N·m)</th><th class="num-cell">Ft (N)</th><th class="num-cell">Fr (N)</th><th></th></tr></thead>
+          <tbody>{% for l in loads %}
+            <tr class="{{ 'table-active' if selected and selected.id == l.id }}">
+              <td><div class="fw-semibold small">{{ l.set_name }}</div><div class="small text-muted-2">{{ l.shaft_label }}</div></td>
+              <td class="num-cell">{{ l.speed_rpm|num(1) }}</td><td class="num-cell">{{ l.torque_nm|num(2) }}</td>
+              <td class="num-cell">{{ l.tangential_force_n|num(0) }}</td><td class="num-cell">{{ l.radial_force_n|num(0) }}</td>
+              <td class="text-end"><a class="btn btn-sm btn-light border" href="{{ url_for('mechcalc.index', load_id=l.id) }}">Verificar</a></td>
+            </tr>
+          {% endfor %}</tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card-body">Nenhum esforço publicado. Abra um conjunto no <a href="{{ url_for('geartech.index') }}">GearTech</a> e clique em “Enviar ao MechCalc”.</div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-xl-5">
+    <div class="card">
+      <div class="card-header">Verificação do eixo à torção</div>
+      <div class="card-body">
+        {% if selected %}
+          <div class="small mb-2"><b>{{ selected.set_name }}</b> · {{ selected.shaft_label }} · T = {{ selected.torque_nm|num(2) }} N·m</div>
+          <form method="post" class="row g-2 align-items-end">
+            <input type="hidden" name="load_id" value="{{ selected.id }}">
+            <div class="col-6"><label class="form-label" for="d">Diâmetro do eixo d (mm)</label>
+              <input class="form-control" id="d" name="diameter" value="{{ values.diameter }}" inputmode="decimal" required></div>
+            <div class="col-6"><label class="form-label" for="tau">τ admissível (MPa)</label>
+              <input class="form-control" id="tau" name="allowable" value="{{ values.allowable }}" inputmode="decimal" required></div>
+            <div class="col-12"><button class="btn btn-primary w-100" type="submit">Verificar</button></div>
+          </form>
+          <div class="formula mt-3">τ = 16·T / (π·d³)</div>
+          {% if check %}
+          <div class="alert {{ 'alert-success' if check.approved else 'alert-danger' }} mt-3 mb-0">
+            <div class="fs-5 fw-bold">τ = {{ check.tau_mpa|num(2) }} MPa — {{ 'aprovado' if check.approved else 'reprovado' }}</div>
+            <div class="small">Fator de segurança {{ check.safety_factor|num(2) }} · diâmetro mínimo {{ check.d_min_mm|num(2) }} mm</div>
+          </div>
+          {% endif %}
+        {% else %}
+          <p class="text-muted-2 mb-0">Escolha um eixo na tabela ao lado.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

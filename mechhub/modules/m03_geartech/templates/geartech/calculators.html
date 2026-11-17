@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Calculadoras · GearTech{% endblock %}
+{% block breadcrumb %}Módulos · GearTech · Calculadoras{% endblock %}
+{% macro field(name, label, placeholder='', default='') -%}
+<div class="col-sm-6 col-lg-3">
+  <label class="form-label" for="{{ name }}">{{ label }}</label>
+  <input class="form-control" id="{{ name }}" name="{{ name }}" value="{{ values.get(name, default) }}" placeholder="{{ placeholder }}" inputmode="decimal">
+</div>
+{%- endmacro %}
+{% block content %}
+{% include "geartech/_nav.html" %}
+<div class="row g-4">
+  <div class="col-xl-8">
+    <div class="card">
+      <div class="card-header p-0 border-0">
+        <ul class="nav nav-tabs px-2 pt-2">
+          {% for key, label in calcs.items() %}
+          <li class="nav-item"><a class="nav-link {{ 'active' if active == key }}" href="{{ url_for('geartech.calculators', kind=key) }}">{{ label }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('geartech.calculators', kind=active) }}" novalidate>
+          {% if active == 'relacao' %}
+            <p class="small text-muted-2">Informe os pares motor/movido (dentes Z ou diâmetros d). Com mais de um par, a relação total é o produto.</p>
+            <div class="formula mb-3">i = Z₂ / Z₁  ·  i<sub>total</sub> = i₁ · i₂ · … · iₖ</div>
+            {% set drivers = values.getlist('driver') if values else [] %}
+            {% set drivens = values.getlist('driven') if values else [] %}
+            {% for k in range(4) %}
+            <div class="row g-2 mb-2">
+              <div class="col-auto d-flex align-items-center small fw-semibold" style="width:4.5rem">Par {{ k + 1 }}</div>
+              <div class="col"><input class="form-control form-control-sm" name="driver" placeholder="Motor (Z1 ou d1)" value="{{ drivers[k] if k < drivers|length }}" inputmode="decimal"></div>
+              <div class="col"><input class="form-control form-control-sm" name="driven" placeholder="Movido (Z2 ou d2)" value="{{ drivens[k] if k < drivens|length }}" inputmode="decimal"></div>
+            </div>
+            {% endfor %}
+          {% elif active == 'rotacao' %}
+            <div class="formula mb-3">n₂ = n₁ / i   ·   ω = 2πn / 60</div>
+            <div class="row g-2">{{ field('speed', 'Rotação de entrada n₁ (rpm)', '1750') }}{{ field('ratio', 'Relação de transmissão i', '4') }}</div>
+          {% elif active == 'torque' %}
+            <div class="formula mb-3">T₁ = P / ω   ·   T₂ = T₁ · i · η</div>
+            <div class="row g-2">
+              {{ field('power', 'Potência P (kW)', '7,5') }}{{ field('speed', 'Rotação n (rpm)', '1750') }}
+              {{ field('ratio', 'Relação i (opcional)', '1') }}{{ field('efficiency', 'Rendimento η (opcional)', '1') }}
+            </div>
+          {% else %}
+            <div class="formula mb-3">P = T · ω   ·   P₂ = P₁ · η</div>
+            <div class="mb-2">
+              {% set mode = values.get('mode', 'torque') %}
+              <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="mode" id="m1" value="torque" {{ 'checked' if mode == 'torque' }}><label class="form-check-label small" for="m1">A partir de torque e rotação</label></div>
+              <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="mode" id="m2" value="potencia" {{ 'checked' if mode == 'potencia' }}><label class="form-check-label small" for="m2">A partir da potência de entrada</label></div>
+            </div>
+            <div class="row g-2">
+              {{ field('torque', 'Torque T (N·m)', '40,9') }}{{ field('speed', 'Rotação n (rpm)', '1750') }}
+              {{ field('power', 'Potência P₁ (kW)', '7,5') }}{{ field('efficiency', 'Rendimento η', '0,96') }}
+            </div>
+          {% endif %}
+          <button class="btn btn-primary mt-3" type="submit"><i class="bi bi-calculator me-1"></i>Calcular e salvar</button>
+        </form>
+
+        {% if record %}
+        {% set r = record.result %}
+        <div class="alert alert-success mt-3 mb-0">
+          <div class="fw-semibold mb-1">Resultado</div>
+          {% if record.kind == 'relacao' %}
+            {% for i in r.relacoes %}<div class="small">Par {{ loop.index }}: i = {{ i|num(4) }}</div>{% endfor %}
+            <div class="fs-5 fw-bold mt-1">i<sub>total</sub> = {{ r.relacao_total|num(4) }} <span class="fs-6 fw-normal">({{ r.tipo }})</span></div>
+          {% elif record.kind == 'rotacao' %}
+            <div class="fs-5 fw-bold">n₂ = {{ r.n2_rpm|num(2) }} rpm</div>
+            <div class="small">ω₁ = {{ r.omega1_rad_s|num(3) }} rad/s · ω₂ = {{ r.omega2_rad_s|num(3) }} rad/s</div>
+          {% elif record.kind == 'torque' %}
+            <div class="fs-5 fw-bold">T₁ = {{ r.T1_Nm|num(3) }} N·m</div>
+            <div class="small">Torque de saída T₂ = {{ r.T2_Nm|num(3) }} N·m · ω = {{ r.omega_rad_s|num(3) }} rad/s</div>
+          {% else %}
+            <div class="fs-5 fw-bold">P₂ = {{ r.P2_kW|num(4) }} kW</div>
+            <div class="small">P₁ = {{ r.P1_kW|num(4) }} kW ({{ r.P1_cv|num(2) }} cv) · perda = {{ r.perda_kW|num(4) }} kW</div>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card">
+      <div class="card-header">Últimos cálculos salvos</div>
+      <div class="card-body history-list py-2">
+        {% for h in history %}
+          <div class="item"><span class="badge text-bg-light border me-1">{{ calcs[h.kind] }}</span>{{ h.summary }}
+            <div class="small text-muted-2">{{ h.created_at|dt }}{% if h.user %} · {{ h.user.name }}{% endif %}</div></div>
+        {% else %}<div class="item text-muted-2">Nenhum cálculo ainda.</div>{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
