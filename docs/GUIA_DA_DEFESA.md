@@ -12,7 +12,7 @@ A avaliação diz que quem não entende o código não recebe a mesma nota. Use 
 6. **Calculadoras**: fazer uma conta de torque e mostrar que ficou salva no histórico.
 7. **Comparar** (funcionalidade 7): marcar 3 conjuntos, mostrar destaques, gráficos e baixar o **PDF** (funcionalidade 8).
 8. **Integração**: "Enviar ao MechCalc" → abrir o MechCalc → verificar o eixo de saída do redutor de esteira com d = 40 mm e τ_adm = 40 MPa (reprova, pede 43,1 mm); depois com d = 45 mm (aprova).
-9. `python -m pytest` → 70 testes passando.
+9. `python -m pytest` → 72 testes passando.
 
 ## Onde está cada funcionalidade
 
@@ -65,6 +65,13 @@ NumPy: produto das relações e varredura vetorizada da simulação de operaçã
 
 **Como garantem que os cálculos estão certos?**
 Testes com valores conhecidos (ex.: 7,5 kW a 1750 rpm → 40,93 N·m) e testes de conservação de energia em todos os eixos (P = T·ω).
+
+### Sobre o design da interface
+
+- **Por que essa paleta?** Neutros (grafite e cinza aço) na estrutura e um único acento laranja, a cor de segurança usada em máquinas. O laranja só aparece na ação principal e no número mais importante, então o olho vai direto para eles (regra 60-30-10).
+- **Qual é o número principal da tela do conjunto?** O torque na saída, porque é o que a transmissão entrega. Relação, rendimento e potência ficam menores ao lado: isso é hierarquia visual (tamanho, contraste e posição).
+- **Por que o alerta aparece dentro da tabela de estágios?** Princípio da proximidade: o que está perto é lido como parte do mesmo grupo. O alerta fica na linha do estágio e já traz o botão para corrigir aquele estágio. O formulário faz o mesmo com os erros de cada campo (`_place_errors` em `routes.py`).
+- **Para que servem os ícones dos estágios?** Reconhecimento visual: dá para identificar o tipo antes de ler o nome. O desenho é o mesmo em todas as telas (`stage_icon` em `templates/_macros.html`) e funciona em preto e branco, porque a forma muda, não só a cor.
 
 ## Divisão sugerida para a apresentação
 

@@ -1,52 +1,51 @@
 {% extends "base.html" %}
 {% from "geartech/_results.html" import results %}
+{% from "_macros.html" import stage_icon, stage_glyph %}
 {% block title %}{{ 'Editar ' ~ ts.name if ts else 'Novo conjunto' }} · GearTech{% endblock %}
 {% block breadcrumb %}Módulos · GearTech · {{ 'Editar conjunto' if ts else 'Novo conjunto' }}{% endblock %}
 
+{% macro field(name, n, label, value, attrs='', col='col-6 col-md-3', extra='') %}
+{%- set err = field_errors.get(name ~ '-' ~ n) if n else field_errors.get(name) -%}
+<div class="{{ col }}" {{ extra|safe }}>
+  <label class="form-label" {{ attrs|safe }}>{{ label }}</label>
+  <input class="form-control form-control-sm {{ 'is-invalid' if err }}" name="{{ name }}" value="{{ value if value is not none }}" inputmode="decimal"
+         {% if name in ('driver', 'driven') %}required{% endif %}{% if name == 'efficiency' %} data-eta{% endif %}
+         {% if name in ('module_mm', 'pitch_mm') %} placeholder="opcional"{% elif name == 'helix_angle_deg' %} placeholder="ex.: 15"{% endif %}>
+  {% if err %}<div class="invalid-feedback">{{ err }}</div>{% endif %}
+</div>
+{%- endmacro %}
+
 {% macro stage_fields(st, n) %}
-<div class="stage-row" data-stage>
-  <span class="stage-number">Estágio <span data-stage-num>{{ n }}</span></span>
-  <div class="row g-2 align-items-end">
-    <div class="col-md-6">
-      <label class="form-label">Tipo de transmissão</label>
-      <select class="form-select form-select-sm" name="stage_type" data-type>
+{%- set s_err = stage_errors.get(n, []) -%}
+{%- set ns = namespace(err=s_err|length > 0) -%}
+{%- for key in field_errors if n and key.endswith('-' ~ n) %}{% set ns.err = true %}{% endfor -%}
+{%- set has_err = ns.err -%}
+<div class="stage-row {{ 'is-invalid' if has_err }}" data-stage id="estagio-form-{{ n }}">
+  <div class="stage-head">
+    <span data-stage-icon>{{ stage_icon(st.stage_type or 'engrenagem_reta', 'lg') }}</span>
+    <div class="flex-grow-1">
+      <div class="stage-number">Estágio <span data-stage-num>{{ n }}</span></div>
+      <select class="form-select form-select-sm mt-1" name="stage_type" data-type aria-label="Tipo de transmissão">
         {% for key, t in stage_types.items() %}
           <option value="{{ key }}" {{ 'selected' if st.stage_type == key }}>{{ t.label }}</option>
         {% endfor %}
       </select>
     </div>
-    <div class="col-md-4">
+    <button class="btn btn-sm btn-ghost align-self-start" type="button" data-remove title="Remover estágio" aria-label="Remover estágio"><i class="bi bi-trash"></i></button>
+  </div>
+  <div class="row g-2 align-items-start">
+    <div class="col-12 col-md-4">
       <label class="form-label">Descrição (opcional)</label>
       <input class="form-control form-control-sm" name="stage_label" value="{{ st.label }}" placeholder="Ex.: 1º par">
     </div>
-    <div class="col-md-2 text-md-end">
-      <button class="btn btn-sm btn-outline-danger" type="button" data-remove><i class="bi bi-trash me-1"></i>Remover</button>
-    </div>
-    <div class="col-6 col-md-3">
-      <label class="form-label" data-driver-label>Z1</label>
-      <input class="form-control form-control-sm" name="driver" value="{{ st.driver if st.driver is not none }}" inputmode="decimal" required>
-    </div>
-    <div class="col-6 col-md-3">
-      <label class="form-label" data-driven-label>Z2</label>
-      <input class="form-control form-control-sm" name="driven" value="{{ st.driven if st.driven is not none }}" inputmode="decimal" required>
-    </div>
-    <div class="col-6 col-md-2">
-      <label class="form-label">Rendimento η</label>
-      <input class="form-control form-control-sm" name="efficiency" value="{{ st.efficiency if st.efficiency is not none }}" inputmode="decimal" data-eta>
-    </div>
-    <div class="col-6 col-md-2" data-geo="modulo">
-      <label class="form-label">Módulo m (mm)</label>
-      <input class="form-control form-control-sm" name="module_mm" value="{{ st.module_mm if st.module_mm is not none }}" inputmode="decimal" placeholder="opcional">
-    </div>
-    <div class="col-6 col-md-2" data-geo="passo">
-      <label class="form-label">Passo p (mm)</label>
-      <input class="form-control form-control-sm" name="pitch_mm" value="{{ st.pitch_mm if st.pitch_mm is not none }}" inputmode="decimal" placeholder="opcional">
-    </div>
-    <div class="col-6 col-md-2" data-geo="helice">
-      <label class="form-label">Hélice β (°)</label>
-      <input class="form-control form-control-sm" name="helix_angle_deg" value="{{ st.helix_angle_deg if st.helix_angle_deg not in (none, 0, 0.0) }}" inputmode="decimal" placeholder="ex.: 15">
-    </div>
+    {{ field('driver', n, 'Z1', st.driver, 'data-driver-label', 'col-6 col-md-4') }}
+    {{ field('driven', n, 'Z2', st.driven, 'data-driven-label', 'col-6 col-md-4') }}
+    {{ field('efficiency', n, 'Rendimento η', st.efficiency, '', 'col-6 col-md-4') }}
+    {{ field('module_mm', n, 'Módulo m (mm)', st.module_mm, '', 'col-6 col-md-4', 'data-geo="modulo"') }}
+    {{ field('pitch_mm', n, 'Passo p (mm)', st.pitch_mm, '', 'col-6 col-md-4', 'data-geo="passo"') }}
+    {{ field('helix_angle_deg', n, 'Hélice β (°)', st.helix_angle_deg if st.helix_angle_deg not in (none, 0, 0.0, '0', '') else none, '', 'col-6 col-md-4', 'data-geo="helice"') }}
   </div>
+  {% if s_err %}<ul class="stage-errors">{% for e in s_err %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
 </div>
 {% endmacro %}
 
@@ -55,12 +54,13 @@
 <form method="post" id="set-form" novalidate>
   <div class="row g-4">
     <div class="col-xl-4">
-      <div class="card">
-        <div class="card-header">1. Dados do conjunto</div>
+      <div class="card" style="position:sticky;top:72px">
+        <div class="card-header">1 · Dados do conjunto e motor</div>
         <div class="card-body">
           <div class="mb-2">
             <label class="form-label" for="name">Nome do conjunto *</label>
-            <input class="form-control" id="name" name="name" value="{{ form.name }}" required>
+            <input class="form-control {{ 'is-invalid' if field_errors.name }}" id="name" name="name" value="{{ form.name }}" required>
+            {% if field_errors.name %}<div class="invalid-feedback">{{ field_errors.name }}</div>{% endif %}
           </div>
           <div class="mb-2">
             <label class="form-label" for="application">Aplicação</label>
@@ -73,11 +73,13 @@
           <div class="row g-2">
             <div class="col-6">
               <label class="form-label" for="p">Potência de entrada (kW) *</label>
-              <input class="form-control" id="p" name="input_power_kw" value="{{ form.input_power_kw }}" inputmode="decimal" required>
+              <input class="form-control {{ 'is-invalid' if field_errors.input_power_kw }}" id="p" name="input_power_kw" value="{{ form.input_power_kw }}" inputmode="decimal" required>
+              {% if field_errors.input_power_kw %}<div class="invalid-feedback">{{ field_errors.input_power_kw }}</div>{% endif %}
             </div>
             <div class="col-6">
               <label class="form-label" for="n">Rotação de entrada (rpm) *</label>
-              <input class="form-control" id="n" name="input_speed_rpm" value="{{ form.input_speed_rpm }}" inputmode="decimal" required>
+              <input class="form-control {{ 'is-invalid' if field_errors.input_speed_rpm }}" id="n" name="input_speed_rpm" value="{{ form.input_speed_rpm }}" inputmode="decimal" required>
+              {% if field_errors.input_speed_rpm %}<div class="invalid-feedback">{{ field_errors.input_speed_rpm }}</div>{% endif %}
             </div>
           </div>
           <p class="small text-muted-2 mt-3 mb-0">Use vírgula ou ponto nos decimais. O rendimento pode ser digitado como 0,98 ou 98. Se ficar vazio, usa-se o valor típico do tipo.</p>
@@ -87,7 +89,7 @@
     <div class="col-xl-8">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <span>2. Estágios (do motor para a saída)</span>
+          <span>2 · Estágios, do motor para a saída</span>
           <button class="btn btn-sm btn-outline-primary" type="button" id="add-stage"><i class="bi bi-plus-lg me-1"></i>Adicionar estágio</button>
         </div>
         <div class="card-body pt-4" id="stages">
@@ -112,7 +114,7 @@
 <hr class="my-4">
 <div class="d-flex align-items-center gap-2 mb-3">
   <h2 class="h5 fw-bold mb-0">Pré-visualização da simulação</h2>
-  <span class="badge text-bg-secondary">não salva</span>
+  <span class="tag tag-muted">não salva</span>
 </div>
 {{ results(preview, charts) }}
 {% endif %}
@@ -128,9 +130,17 @@
     {% endfor %}
   };
   var box = document.getElementById("stages");
+  var GLYPHS = {
+    {% for key in stage_types %}"{{ key }}": {{ stage_glyph(key)|string|tojson }}{{ ',' if not loop.last }}
+    {% endfor %}
+  };
 
   function refresh(row) {
-    var t = TYPES[row.querySelector("[data-type]").value];
+    var key = row.querySelector("[data-type]").value;
+    var t = TYPES[key];
+    var icon = row.querySelector("[data-stage-icon] .stage-icon");
+    icon.className = "stage-icon si-lg si-" + key;
+    icon.querySelector("svg").innerHTML = GLYPHS[key];
     row.querySelector("[data-driver-label]").textContent = t.driver;
     row.querySelector("[data-driven-label]").textContent = t.driven;
     row.querySelector("[data-eta]").placeholder = "típico " + String(t.eta).replace(".", ",");
@@ -141,7 +151,7 @@
   }
   function renumber() {
     var rows = box.querySelectorAll("[data-stage]");
-    rows.forEach(function (r, i) { r.querySelector("[data-stage-num]").textContent = i + 1; });
+    rows.forEach(function (r, i) { r.querySelector("[data-stage-num]").textContent = i + 1; r.id = "estagio-form-" + (i + 1); });
     rows.forEach(function (r) { r.querySelector("[data-remove]").disabled = rows.length === 1; });
   }
   function wire(row) {

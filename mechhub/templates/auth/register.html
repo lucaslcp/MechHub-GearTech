@@ -2,11 +2,10 @@
 {% block title %}Cadastro{% endblock %}
 {% block body %}
 <div class="auth-wrap">
+  {% include "auth/_side.html" %}
+  <main class="auth-main">
   <div class="auth-card">
-    <div class="text-center text-white mb-4">
-      <div class="fs-2 fw-bold"><i class="bi bi-gear-wide-connected" style="color:var(--mh-orange)"></i> MechHub</div>
-    </div>
-    <div class="card shadow-lg border-0">
+    <div class="card">
       <div class="card-body p-4">
         <h1 class="h5 fw-bold mb-1">Criar conta</h1>
         <p class="small text-muted-2">Se a organização ainda não existir, ela será criada e você será o administrador.</p>
@@ -37,5 +36,6 @@
       </div>
     </div>
   </div>
+</main>
 </div>
 {% endblock %}

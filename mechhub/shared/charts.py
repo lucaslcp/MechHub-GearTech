@@ -6,7 +6,10 @@ Assim todos os módulos usam o mesmo visual.
 """
 import plotly.graph_objects as go
 
-PALETTE = ["#1f4e79", "#e07a1f", "#2a9d8f", "#8e5ea2", "#c0392b", "#6c757d"]
+# Paleta "Oficina" (a mesma do CSS): grafite, laranja segurança, azul aço,
+# cinza, vermelho (perdas) e verde. Em preto e branco as séries continuam
+# distinguíveis pela posição e pelos rótulos de valor.
+PALETTE = ["#2c313a", "#e8590c", "#2f6db5", "#8b929c", "#c92a2a", "#2b8a3e"]
 
 
 def wrap_label(text, width: int = 18) -> str:
@@ -24,18 +27,18 @@ def wrap_label(text, width: int = 18) -> str:
 
 def _layout(fig: go.Figure, title: str, x_title: str = "", y_title: str = "") -> go.Figure:
     fig.update_layout(
-        title={"text": title, "x": 0, "xanchor": "left", "font": {"size": 15}},
+        title={"text": title, "x": 0, "xanchor": "left", "font": {"size": 14, "color": "#16191f"}},
         template="plotly_white",
         colorway=PALETTE,
-        font={"family": "Inter, Segoe UI, system-ui, sans-serif", "size": 12, "color": "#1d2733"},
+        font={"family": "IBM Plex Sans, Segoe UI, system-ui, sans-serif", "size": 12, "color": "#2c313a"},
         margin={"l": 60, "r": 24, "t": 56, "b": 48},
         legend={"orientation": "h", "y": -0.2},
         hovermode="x unified",
         height=360,
         separators=",.",  # vírgula decimal e ponto de milhar (padrão brasileiro)
     )
-    fig.update_xaxes(title_text=x_title, showgrid=False)
-    fig.update_yaxes(title_text=y_title, gridcolor="#e9edf2", rangemode="tozero")
+    fig.update_xaxes(title_text=x_title, showgrid=False, linecolor="#d6d7d3")
+    fig.update_yaxes(title_text=y_title, gridcolor="#ecece9", zerolinecolor="#d6d7d3", rangemode="tozero")
     return fig
 
 

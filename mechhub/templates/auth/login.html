@@ -2,14 +2,13 @@
 {% block title %}Entrar{% endblock %}
 {% block body %}
 <div class="auth-wrap">
+  {% include "auth/_side.html" %}
+  <main class="auth-main">
   <div class="auth-card">
-    <div class="text-center text-white mb-4">
-      <div class="fs-2 fw-bold"><i class="bi bi-gear-wide-connected" style="color:var(--mh-orange)"></i> MechHub</div>
-      <div class="opacity-75">Plataforma integrada de Engenharia Mecânica</div>
-    </div>
-    <div class="card shadow-lg border-0">
+    <div class="card">
       <div class="card-body p-4">
-        <h1 class="h5 fw-bold mb-3">Entrar</h1>
+        <h1 class="h4 fw-bold mb-1">Entrar</h1>
+        <p class="small text-muted-2 mb-3">Acesse os módulos da sua organização.</p>
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% for category, message in messages %}<div class="alert alert-{{ category }} py-2 small">{{ message }}</div>{% endfor %}
         {% endwith %}
@@ -29,12 +28,13 @@
           </div>
           <button class="btn btn-primary w-100" type="submit">Entrar</button>
         </form>
-        <div class="alert alert-light border small mt-3 mb-0">
+        <div class="calc-result small mt-3 mb-0 py-2">
           <strong>Conta de demonstração:</strong> demo@mechhub.local · senha mechhub123
         </div>
         <p class="small text-center mt-3 mb-0">Não tem conta? <a href="{{ url_for('auth.register') }}">Cadastre-se</a></p>
       </div>
     </div>
   </div>
+</main>
 </div>
 {% endblock %}

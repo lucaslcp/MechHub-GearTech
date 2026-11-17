@@ -23,10 +23,10 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-NAVY = colors.HexColor("#1f4e79")
-ORANGE = colors.HexColor("#e07a1f")
-SERIES_COLORS = [NAVY, ORANGE, colors.HexColor("#2a9d8f"), colors.HexColor("#8e5ea2"),
-                 colors.HexColor("#c0392b"), colors.HexColor("#6c757d")]
+NAVY = colors.HexColor("#2c313a")  # grafite (paleta "Oficina")
+ORANGE = colors.HexColor("#e8590c")  # laranja segurança
+SERIES_COLORS = [NAVY, ORANGE, colors.HexColor("#2f6db5"), colors.HexColor("#8b929c"),
+                 colors.HexColor("#c92a2a"), colors.HexColor("#2b8a3e")]
 
 # As fontes padrão do PDF (Helvetica) não têm letras gregas nem setas.
 _REPLACEMENTS = {"η": "eta", "→": "->", "≤": "<=", "≥": ">=", "τ": "tau", "β": "beta",
@@ -68,13 +68,13 @@ class PdfReport:
         self.styles = {
             "title": ParagraphStyle("t", parent=base["Title"], alignment=TA_LEFT, textColor=NAVY,
                                     fontSize=19, spaceAfter=4),
-            "subtitle": ParagraphStyle("s", parent=base["Normal"], textColor=colors.HexColor("#5b6675"),
+            "subtitle": ParagraphStyle("s", parent=base["Normal"], textColor=colors.HexColor("#5f6773"),
                                        fontSize=10, spaceAfter=14),
             "h2": ParagraphStyle("h2", parent=base["Heading2"], textColor=NAVY, fontSize=13,
                                  spaceBefore=12, spaceAfter=6),
             "body": ParagraphStyle("b", parent=base["Normal"], fontSize=9.5, leading=13),
             "small": ParagraphStyle("sm", parent=base["Normal"], fontSize=8, leading=10,
-                                    textColor=colors.HexColor("#5b6675")),
+                                    textColor=colors.HexColor("#5f6773")),
             "warn": ParagraphStyle("w", parent=base["Normal"], fontSize=9, leading=12,
                                    textColor=colors.HexColor("#8a4b00")),
         }
@@ -99,12 +99,12 @@ class PdfReport:
         widths = [w * cm for w in col_widths] if col_widths else None
         tbl = Table(data, colWidths=widths, repeatRows=1 if header else 0, hAlign="LEFT")
         style = [
-            ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#c9d2dc")),
+            ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#d6d7d3")),
             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
             ("FONTSIZE", (0, 0), (-1, -1), 8.5),
             ("TOPPADDING", (0, 0), (-1, -1), 3),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f3f6f9")]),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f5f5f2")]),
         ]
         if header:
             style += [("BACKGROUND", (0, 0), (-1, 0), NAVY), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white)]
@@ -146,7 +146,7 @@ class PdfReport:
             chart.bars[i].strokeColor = None
         drawing.add(chart)
         if y_label:
-            drawing.add(String(0, 5.9 * cm, safe_text(y_label), fontSize=7, fillColor=colors.HexColor("#5b6675")))
+            drawing.add(String(0, 5.9 * cm, safe_text(y_label), fontSize=7, fillColor=colors.HexColor("#5f6773")))
         self._legend(drawing, list(series.keys()), 17 * cm, 6.5 * cm)
         self.story.append(KeepTogether([drawing, Spacer(1, 0.2 * cm)]))
 
@@ -168,14 +168,14 @@ class PdfReport:
             chart.lines[i].strokeWidth = 1.6
         drawing.add(chart)
         if y_label:
-            drawing.add(String(0, 5.9 * cm, safe_text(y_label), fontSize=7, fillColor=colors.HexColor("#5b6675")))
+            drawing.add(String(0, 5.9 * cm, safe_text(y_label), fontSize=7, fillColor=colors.HexColor("#5f6773")))
         self._legend(drawing, list(series.keys()), 17 * cm, 6.5 * cm)
         self.story.append(KeepTogether([drawing, Spacer(1, 0.2 * cm)]))
 
     def _footer(self, canvas, doc):
         canvas.saveState()
         canvas.setFont("Helvetica", 7.5)
-        canvas.setFillColor(colors.HexColor("#5b6675"))
+        canvas.setFillColor(colors.HexColor("#5f6773"))
         canvas.drawString(2 * cm, 1.2 * cm, "MechHub · Plataforma integrada de Engenharia Mecânica")
         canvas.drawRightString(A4[0] - 2 * cm, 1.2 * cm, f"Página {doc.page}")
         canvas.setStrokeColor(ORANGE)

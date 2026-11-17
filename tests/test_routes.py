@@ -69,6 +69,27 @@ def test_formulario_com_erro_mostra_mensagem(logged):
     assert "maior que zero" in resp.get_data(as_text=True)
 
 
+def test_erro_aparece_ao_lado_do_campo(logged):
+    """Princípio da proximidade: o erro fica no campo/estágio que precisa ser corrigido."""
+    form = MultiDict([("name", "Conjunto com erro"), ("input_power_kw", "abc"), ("input_speed_rpm", "1000"),
+                      ("stage_type", "engrenagem_reta"), ("driver", "20"), ("driven", "40"),
+                      ("stage_type", "corrente"), ("driver", ""), ("driven", "38")])
+    resp = logged.post("/geartech/conjuntos/novo", data=form)
+    html = resp.get_data(as_text=True)
+    assert resp.status_code == 400
+    assert "corrija 2 campo(s) destacado(s)" in html
+    assert "&#39;abc&#39; não é um número válido" in html          # junto da potência
+    assert 'id="estagio-form-2"' in html and "stage-row is-invalid" in html
+    assert html.count('class="invalid-feedback"') == 2
+
+
+def test_alerta_fica_no_estagio(logged):
+    """O alerta de interferência aparece na linha do estágio, com o atalho para corrigir."""
+    html = logged.get("/geartech/conjuntos/4").get_data(as_text=True)  # sem-fim + par 14/28
+    assert "stage-alert-row" in html
+    assert "Corrigir este estágio" in html and "/editar#estagio-form-2" in html
+
+
 def test_excluir_pela_tela(logged):
     resp = logged.post("/geartech/conjuntos/4/excluir", follow_redirects=True)
     assert resp.status_code == 200

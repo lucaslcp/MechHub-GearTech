@@ -59,19 +59,19 @@
 
         {% if record %}
         {% set r = record.result %}
-        <div class="alert alert-success mt-3 mb-0">
-          <div class="fw-semibold mb-1">Resultado</div>
+        <div class="calc-result mt-3">
+          <div class="hero-label mb-1"><i class="bi bi-check-circle-fill me-1" style="color:var(--mh-ok)"></i>Resultado (salvo no histórico)</div>
           {% if record.kind == 'relacao' %}
             {% for i in r.relacoes %}<div class="small">Par {{ loop.index }}: i = {{ i|num(4) }}</div>{% endfor %}
-            <div class="fs-5 fw-bold mt-1">i<sub>total</sub> = {{ r.relacao_total|num(4) }} <span class="fs-6 fw-normal">({{ r.tipo }})</span></div>
+            <div class="calc-value">i<sub>total</sub> = {{ r.relacao_total|num(4) }} <span class="unit">({{ r.tipo }})</span></div>
           {% elif record.kind == 'rotacao' %}
-            <div class="fs-5 fw-bold">n₂ = {{ r.n2_rpm|num(2) }} rpm</div>
+            <div class="calc-value">n₂ = {{ r.n2_rpm|num(2) }} rpm</div>
             <div class="small">ω₁ = {{ r.omega1_rad_s|num(3) }} rad/s · ω₂ = {{ r.omega2_rad_s|num(3) }} rad/s</div>
           {% elif record.kind == 'torque' %}
-            <div class="fs-5 fw-bold">T₁ = {{ r.T1_Nm|num(3) }} N·m</div>
+            <div class="calc-value">T₁ = {{ r.T1_Nm|num(3) }} N·m</div>
             <div class="small">Torque de saída T₂ = {{ r.T2_Nm|num(3) }} N·m · ω = {{ r.omega_rad_s|num(3) }} rad/s</div>
           {% else %}
-            <div class="fs-5 fw-bold">P₂ = {{ r.P2_kW|num(4) }} kW</div>
+            <div class="calc-value">P₂ = {{ r.P2_kW|num(4) }} kW</div>
             <div class="small">P₁ = {{ r.P1_kW|num(4) }} kW ({{ r.P1_cv|num(2) }} cv) · perda = {{ r.perda_kW|num(4) }} kW</div>
           {% endif %}
         </div>
@@ -84,8 +84,8 @@
       <div class="card-header">Últimos cálculos salvos</div>
       <div class="card-body history-list py-2">
         {% for h in history %}
-          <div class="item"><span class="badge text-bg-light border me-1">{{ calcs[h.kind] }}</span>{{ h.summary }}
-            <div class="small text-muted-2">{{ h.created_at|dt }}{% if h.user %} · {{ h.user.name }}{% endif %}</div></div>
+          <div class="item"><span class="tag tag-muted me-1">{{ calcs[h.kind] }}</span>{{ h.summary }}
+            <div class="when">{{ h.created_at|dt }}{% if h.user %} · {{ h.user.name }}{% endif %}</div></div>
         {% else %}<div class="item text-muted-2">Nenhum cálculo ainda.</div>{% endfor %}
       </div>
     </div>

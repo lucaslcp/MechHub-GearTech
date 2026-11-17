@@ -27,8 +27,11 @@ MODULE = "geartech"
 class GearTechValidationError(ValueError):
     """Erros de preenchimento de formulário (uma ou mais mensagens)."""
 
-    def __init__(self, messages):
+    def __init__(self, messages, fields: dict | None = None):
         self.messages = [messages] if isinstance(messages, str) else list(messages)
+        # campo do formulário -> mensagem, para mostrar o erro ao lado do campo
+        # (ex.: "input_power_kw", "driver-2" = Z1 do estágio 2)
+        self.fields = dict(fields or {})
         super().__init__("; ".join(self.messages))
 
 
@@ -65,19 +68,23 @@ class SetData:
 def parse_set_form(form) -> SetData:
     """Lê o formulário de conjunto (campos de estágio vêm em listas: stage_type[], driver[] ...)."""
     errors: list[str] = []
+    fields: dict[str, str] = {}
 
-    def number(raw, name, required=True):
+    def number(raw, name, required=True, key=None):
         try:
             return parse_number(raw, name, required)
         except GearTechValidationError as exc:
             errors.extend(exc.messages)
+            if key:
+                fields[key] = exc.messages[0]
             return None
 
     name = (form.get("name") or "").strip()
     if len(name) < 3:
         errors.append("Nome do conjunto: use pelo menos 3 caracteres.")
-    power = number(form.get("input_power_kw"), "Potência de entrada")
-    speed = number(form.get("input_speed_rpm"), "Rotação de entrada")
+        fields["name"] = errors[-1]
+    power = number(form.get("input_power_kw"), "Potência de entrada", key="input_power_kw")
+    speed = number(form.get("input_speed_rpm"), "Rotação de entrada", key="input_speed_rpm")
 
     types = form.getlist("stage_type")
     drivers = form.getlist("driver")
@@ -98,19 +105,20 @@ def parse_set_form(form) -> SetData:
             errors.append(f"Estágio {n}: escolha o tipo de transmissão.")
             continue
         info = STAGE_TYPES[stype]
-        eta = number(at(etas, k), f"Estágio {n} – rendimento", required=False)
+        eta = number(at(etas, k), f"Estágio {n} – rendimento", required=False, key=f"efficiency-{n}")
         if eta is not None and eta > 1:
             eta = eta / 100  # o usuário digitou em %, ex.: 98
         stages.append(StageInput(
             stage_type=stype,
-            driver=number(at(drivers, k), f"Estágio {n} – {info.driver_label}"),
-            driven=number(at(drivens, k), f"Estágio {n} – {info.driven_label}"),
+            driver=number(at(drivers, k), f"Estágio {n} – {info.driver_label}", key=f"driver-{n}"),
+            driven=number(at(drivens, k), f"Estágio {n} – {info.driven_label}", key=f"driven-{n}"),
             efficiency=eta,
-            module_mm=number(at(modules, k), f"Estágio {n} – módulo", required=False)
+            module_mm=number(at(modules, k), f"Estágio {n} – módulo", required=False, key=f"module_mm-{n}")
             if info.geometry == "modulo" else None,
-            pitch_mm=number(at(pitches, k), f"Estágio {n} – passo", required=False)
+            pitch_mm=number(at(pitches, k), f"Estágio {n} – passo", required=False, key=f"pitch_mm-{n}")
             if info.geometry == "passo" else None,
-            helix_angle_deg=(number(at(helix, k), f"Estágio {n} – ângulo de hélice", required=False) or 0.0)
+            helix_angle_deg=(number(at(helix, k), f"Estágio {n} – ângulo de hélice", required=False,
+                                     key=f"helix_angle_deg-{n}") or 0.0)
             if stype == "engrenagem_helicoidal" else 0.0,
             label=(at(labels, k) or "").strip()[:80],
         ))
@@ -118,7 +126,7 @@ def parse_set_form(form) -> SetData:
         errors.append("Inclua pelo menos um estágio de transmissão.")
 
     if errors:
-        raise GearTechValidationError(errors)
+        raise GearTechValidationError(errors, fields)
 
     data = SetData(name=name[:120], application=(form.get("application") or "").strip()[:120],
                    description=(form.get("description") or "").strip()[:2000],

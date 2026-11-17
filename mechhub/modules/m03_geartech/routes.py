@@ -1,4 +1,6 @@
 """GearTech — rotas (telas) do módulo."""
+import re
+
 from flask import Response, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
@@ -55,9 +57,37 @@ def index():
                            events=recent_events(_org(), module=svc.MODULE, limit=10))
 
 
-def _render_form(form_data, ts=None, preview=None, status=200):
+def _render_form(form_data, ts=None, preview=None, status=200, field_errors=None, stage_errors=None):
     return render_template("geartech/form.html", form=form_data, ts=ts, stage_types=STAGE_TYPES,
-                           preview=preview, charts=svc.set_charts(preview) if preview else []), status
+                           preview=preview, charts=svc.set_charts(preview) if preview else [],
+                           field_errors=field_errors or {}, stage_errors=stage_errors or {}), status
+
+
+def _place_errors(exc):
+    """Separa os erros: ao lado do campo, no bloco do estágio ou no topo da página.
+
+    Princípio da proximidade: a orientação aparece perto de onde se corrige.
+    """
+    field_errors = {}
+    for key, msg in exc.fields.items():
+        text = msg.split(": ", 1)[-1]
+        field_errors[key] = text[:1].upper() + text[1:]
+    stage_errors: dict[int, list[str]] = {}
+    general = []
+    for msg in exc.messages:
+        if msg in exc.fields.values():
+            continue
+        match = re.match(r"Estágio (\d+)", msg)
+        if match:
+            stage_errors.setdefault(int(match.group(1)), []).append(msg)
+        else:
+            general.append(msg)
+    placed = len(field_errors) + sum(len(v) for v in stage_errors.values())
+    if placed:
+        flash(f"Não foi possível continuar: corrija {placed} campo(s) destacado(s) em vermelho.", "danger")
+    for msg in general:
+        flash(msg, "danger")
+    return field_errors, stage_errors
 
 
 def _handle_form(ts=None):
@@ -65,9 +95,9 @@ def _handle_form(ts=None):
     try:
         data = svc.parse_set_form(request.form)
     except svc.GearTechValidationError as exc:
-        for msg in exc.messages:
-            flash(msg, "danger")
-        return _render_form(svc.form_to_dict(request.form), ts, status=400)
+        field_errors, stage_errors = _place_errors(exc)
+        return _render_form(svc.form_to_dict(request.form), ts, status=400,
+                            field_errors=field_errors, stage_errors=stage_errors)
     if action == "preview":
         # Funcionalidade 6: simula sem gravar.
         return _render_form(svc.form_to_dict(request.form), ts, preview=svc.simulate(data))

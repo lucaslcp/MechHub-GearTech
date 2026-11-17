@@ -26,7 +26,19 @@ Abra **http://127.0.0.1:5000** e entre com a conta de demonstração:
 |---|---|
 | `demo@mechhub.local` | `mechhub123` |
 
-Na primeira execução o banco `instance/mechhub.db` é criado com uma organização fictícia e quatro conjuntos de exemplo (redutor de esteira, betoneira, Fórmula SAE e motorredutor sem-fim). Apague esse arquivo para recomeçar do zero. No Windows também dá para dar dois cliques em `iniciar.bat`.
+Na primeira execução o banco `instance/mechhub.db` é criado com uma organização fictícia e quatro conjuntos de exemplo (redutor de esteira, betoneira, Fórmula SAE e motorredutor sem-fim). Apague esse arquivo para recomeçar do zero.
+
+### Acesso rápido no Windows (um clique)
+
+```bash
+.venv\Scripts\python.exe criar_atalho.py
+```
+
+Cria o ícone **MechHub** na Área de Trabalho e no Menu Iniciar (dá para procurar "MechHub" no Iniciar). O atalho liga o servidor em segundo plano, sem janela preta, e abre o navegador. Se o servidor já estiver ligado, só abre o navegador.
+
+- `abrir_mechhub.pyw`: o que o atalho executa.
+- `parar_mechhub.pyw`: desliga o servidor (dois cliques).
+- `iniciar.bat`: alternativa com janela; na primeira vez cria o ambiente e o atalho.
 
 ### Testes
 
@@ -34,7 +46,7 @@ Na primeira execução o banco `instance/mechhub.db` é criado com uma organiza�
 python -m pytest
 ```
 
-70 testes automatizados: fórmulas, banco de dados, telas, tratamento de erros e integração.
+72 testes automatizados: fórmulas, banco de dados, telas, tratamento de erros e integração.
 
 ## As 8 funcionalidades do GearTech
 
@@ -54,6 +66,28 @@ Além disso: **calculadoras rápidas** (relação, rotação, torque e potência
 | Comparação de configurações | Simulação sem salvar |
 |---|---|
 | ![Comparação](docs/img/comparacao.png) | ![Formulário com simulação](docs/img/formulario-simulacao.png) |
+
+## Design da interface
+
+Paleta **"Oficina"**, escolhida para um sistema de engenharia: neutros na estrutura e **um único acento** (laranja segurança, a cor de alerta de máquinas industriais) reservado para a ação principal e o número mais importante de cada tela. A proporção segue a regra 60-30-10.
+
+| Papel | Cor | Uso |
+|---|---|---|
+| Grafite | `#16191F` | menu lateral, títulos, texto |
+| Grafite claro | `#2C313A` | 1ª série dos gráficos, botões secundários ativos |
+| Cinza aço | `#5F6773` | textos de apoio, unidades |
+| Fundo | `#F5F5F2` | página (branco levemente quente) |
+| Laranja segurança | `#E8590C` | ação principal, destaque, 2ª série dos gráficos |
+| Azul aço | `#2F6DB5` | 3ª série dos gráficos, "enviado ao MechCalc" |
+| Estados | `#2B8A3E` / `#A86400` / `#C92A2A` | OK / alerta / erro |
+
+Fontes: **IBM Plex Sans** (texto, números tabulares) e Cambria Math (fórmulas). Os gráficos Plotly e os PDFs usam a mesma paleta (`shared/charts.py`, `shared/reports.py`).
+
+Três princípios de interface guiaram o redesenho:
+
+1. **Hierarquia visual.** Cada tela tem um número principal. No conjunto, é o torque na saída, em tamanho grande; relação, rendimento e potência ficam menores ao lado.
+2. **Proximidade.** O alerta de projeto aparece na linha do estágio a que se refere, com o botão "Corrigir este estágio". No formulário, cada erro fica embaixo do campo que precisa ser corrigido.
+3. **Reconhecimento visual.** Cada tipo de estágio tem um desenho próprio (engrenagem reta, helicoidal, polias, corrente e sem-fim). O mesmo desenho aparece na lista, no detalhe, no caminho da potência, na comparação e no formulário. A forma basta para reconhecer o tipo, mesmo em preto e branco.
 
 ## Integração GearTech → MechCalc
 
@@ -113,7 +147,7 @@ Os outros módulos (2, 4 a 10) aparecem no menu e no painel como "em desenvolvim
 ## Tratamento de erros
 
 - Campos numéricos aceitam vírgula ou ponto; textos, zero e negativos geram mensagens em português.
-- O formulário mostra **todos** os erros de uma vez e mantém o que foi digitado (HTTP 400).
+- O formulário mostra **todos** os erros de uma vez, cada um ao lado do campo, e mantém o que foi digitado (HTTP 400).
 - Dados de outra organização retornam 404; erros internos desfazem a transação e mostram uma página amigável.
 - Rendimento digitado como `98` é entendido como `0,98`.
 

@@ -1,52 +1,72 @@
-{# Resultado completo de uma simulação: usado no detalhe e na pré-visualização do formulário. #}
-{% from "_macros.html" import kpi, chart %}
-{% macro results(result, charts) %}
-<div class="row g-3 mb-3">
-  <div class="col-6 col-lg-3">{{ kpi('Relação total i', result.total_ratio|num(3), '', result.kind|capitalize) }}</div>
-  <div class="col-6 col-lg-3">{{ kpi('Rotação de saída', result.output_speed_rpm|num(1), 'rpm', 'entrada ' ~ result.input_speed_rpm|num(0) ~ ' rpm') }}</div>
-  <div class="col-6 col-lg-3">{{ kpi('Torque de saída', result.output_torque_nm|num(1), 'N·m', 'entrada ' ~ result.input_torque_nm|num(2) ~ ' N·m') }}</div>
-  <div class="col-6 col-lg-3">{{ kpi('Potência de saída', result.output_power_kw|num(3), 'kW', 'η total ' ~ result.total_efficiency|pct(2)) }}</div>
+{# Resultado completo de uma simulação: usado no detalhe e na pré-visualização do formulário.
+   Princípios de design aplicados:
+   1. Hierarquia: o que a transmissão entrega (torque e rotação de saída) vem primeiro e maior.
+   2. Proximidade: cada alerta aparece na linha do estágio a que se refere, com a ação para corrigir.
+   3. Reconhecimento: cada tipo de estágio tem um desenho próprio, igual em todas as telas. #}
+{% from "_macros.html" import chart, stage_icon %}
+{% macro results(result, charts, edit_url=None) %}
+<div class="hero mb-3">
+  <div class="hero-main">
+    <div class="hero-label">Torque na saída</div>
+    <div class="hero-value">{{ result.output_torque_nm|num(1) }}<span class="unit">N·m</span></div>
+    <div class="hero-sub">a <b>{{ result.output_speed_rpm|num(1) }} rpm</b> · {{ result.kind }} de
+      <b>{{ result.total_ratio|num(3) }} : 1</b> · torque multiplicado por <b>{{ result.torque_multiplication|num(2) }}×</b></div>
+    {% if result.warnings %}
+      <a class="tag tag-warn mt-3" href="#estagios"><i class="bi bi-exclamation-triangle-fill"></i>
+        Alertas de projeto: {{ result.warnings|length }} — ver nos estágios</a>
+    {% else %}
+      <span class="tag tag-ok mt-3"><i class="bi bi-check-circle-fill"></i>Nenhum alerta de projeto</span>
+    {% endif %}
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="label">Relação total i</div>
+      <div class="value">{{ result.total_ratio|num(3) }}</div></div>
+    <div class="hero-stat"><div class="label">Rendimento total η</div>
+      <div class="value">{{ result.total_efficiency|pct(2) }}</div></div>
+    <div class="hero-stat"><div class="label">Potência de saída</div>
+      <div class="value">{{ result.output_power_kw|num(3) }} <span class="unit">kW</span></div></div>
+    <div class="hero-stat"><div class="label">Perdas</div>
+      <div class="value">{{ result.total_power_loss_kw|num(3) }} <span class="unit">kW</span></div></div>
+    <div class="hero-stat"><div class="label">Entrada (motor)</div>
+      <div class="value">{{ result.input_power_kw|num(2) }} <span class="unit">kW</span></div></div>
+    <div class="hero-stat"><div class="label">Rotação · torque de entrada</div>
+      <div class="value">{{ result.input_speed_rpm|num(0) }} <span class="unit">rpm</span> · {{ result.input_torque_nm|num(2) }} <span class="unit">N·m</span></div></div>
+  </div>
 </div>
 
 <div class="card mb-3">
-  <div class="card-header">Caminho da potência</div>
+  <div class="card-header">Caminho da potência, do motor para a saída</div>
   <div class="card-body">
     <div class="flow">
       {% for s in result.shafts %}
         <div class="node {{ 'input' if loop.first }} {{ 'output' if loop.last }}">
-          <div class="small fw-semibold">Eixo {{ s.index }}</div>
-          <div class="small text-muted-2">{{ s.label }}</div>
-          <div class="small mt-1"><b>{{ s.speed_rpm|num(1) }}</b> rpm</div>
-          <div class="small"><b>{{ s.torque_nm|num(2) }}</b> N·m</div>
-          <div class="small"><b>{{ s.power_kw|num(3) }}</b> kW</div>
-          <div class="small text-muted-2"><i class="bi bi-arrow-repeat"></i> {{ s.direction }}</div>
+          <div class="title">{{ 'Motor' if loop.first else s.label }}</div>
+          <div class="sub">Eixo {{ s.index }} · <i class="bi bi-arrow-repeat"></i> {{ s.direction }}</div>
+          <div class="big">{{ s.torque_nm|num(2) }} <span class="sub">N·m</span></div>
+          <div class="line">{{ s.speed_rpm|num(1) }} <span class="text-muted-2">rpm</span></div>
+          <div class="line">{{ s.power_kw|num(3) }} <span class="text-muted-2">kW</span></div>
         </div>
         {% if not loop.last %}
           {% set st = result.stages[loop.index0] %}
-          <div class="arrow"><i class="bi bi-arrow-right"></i>i = {{ st.ratio|num(3) }}<br>η = {{ st.efficiency|num(2) }}</div>
+          <a class="link text-decoration-none {{ 'has-warning' if st.warnings }}" href="#estagio-{{ st.index }}"
+             title="{{ st.type_label }}{% if st.warnings %} — {{ st.warnings|length }} alerta(s){% endif %}">
+            {{ stage_icon(st.type_key, 'md') }}
+            <span>i = {{ st.ratio|num(3) }}<br>η = {{ st.efficiency|num(2) }}</span>
+            <i class="bi bi-arrow-right"></i>
+          </a>
         {% endif %}
       {% endfor %}
     </div>
   </div>
 </div>
 
-{% if result.warnings %}
-<div class="alert alert-warning">
-  <div class="fw-semibold mb-1"><i class="bi bi-exclamation-triangle me-1"></i>Alertas de projeto</div>
-  <ul class="mb-0 small">{% for w in result.warnings %}<li>{{ w }}</li>{% endfor %}</ul>
-</div>
-{% endif %}
-
-<div class="row g-3 mb-3">
-  {% for fig in charts %}
-  <div class="col-lg-6"><div class="card"><div class="card-body p-2">{{ chart(fig, 'chart-' ~ loop.index) }}</div></div></div>
-  {% endfor %}
-</div>
-
-<div class="card mb-3">
-  <div class="card-header">Estágios: relação, rotação, torque, potência e esforços</div>
+<div class="card mb-3" id="estagios">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>Estágios: relação, rotação, torque, potência e esforços</span>
+    {% if result.warnings %}<span class="tag tag-warn">{{ result.warnings|length }} alerta(s)</span>{% endif %}
+  </div>
   <div class="table-responsive">
-    <table class="table table-sm table-hover align-middle">
+    <table class="table table-sm align-middle">
       <thead><tr>
         <th>#</th><th>Tipo</th><th class="num-cell">Z1/d1</th><th class="num-cell">Z2/d2</th><th class="num-cell">i</th>
         <th class="num-cell">η</th><th class="num-cell">n saída (rpm)</th><th class="num-cell">T saída (N·m)</th>
@@ -55,9 +75,10 @@
       </tr></thead>
       <tbody>
       {% for s in result.stages %}
-        <tr>
-          <td>{{ s.index }}</td>
-          <td><div class="fw-semibold small">{{ s.label }}</div><div class="small text-muted-2">{{ s.type_label }}</div></td>
+        <tr id="estagio-{{ s.index }}" class="{{ 'has-warning' if s.warnings }}">
+          <td class="text-muted-2">{{ s.index }}</td>
+          <td><div class="d-flex align-items-center gap-2">{{ stage_icon(s.type_key, 'sm') }}
+            <div><div class="fw-semibold small">{{ s.label }}</div><div class="small text-muted-2">{{ s.type_label }}</div></div></div></td>
           <td class="num-cell">{{ s.driver|num(0 if s.driver == s.driver|int else 1) }}</td>
           <td class="num-cell">{{ s.driven|num(0 if s.driven == s.driven|int else 1) }}</td>
           <td class="num-cell fw-semibold">{{ s.ratio|num(3) }}</td>
@@ -71,9 +92,33 @@
           <td class="num-cell">{{ s.radial_force_n|num(0) }}</td>
           <td class="num-cell">{{ s.axial_force_n|num(0) }}</td>
         </tr>
+        {% if s.warnings %}
+        <tr class="stage-alert-row">
+          <td></td>
+          <td colspan="13">
+            <div class="stage-alert">
+              <div class="d-flex gap-2">
+                <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+                <div><div class="fw-semibold">Estágio {{ s.index }} · {{ s.label }}</div>
+                  <ul>{% for w in s.warnings %}<li>{{ w }}</li>{% endfor %}</ul></div>
+              </div>
+              {% if edit_url %}<a class="btn btn-sm btn-light no-print" href="{{ edit_url }}#estagio-form-{{ s.index }}">
+                <i class="bi bi-pencil me-1"></i>Corrigir este estágio</a>
+              {% else %}<a class="btn btn-sm btn-light no-print" href="#estagio-form-{{ s.index }}">
+                <i class="bi bi-arrow-up me-1"></i>Ir para o estágio {{ s.index }}</a>{% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endif %}
       {% endfor %}
       </tbody>
     </table>
   </div>
+</div>
+
+<div class="row g-3 mb-3">
+  {% for fig in charts %}
+  <div class="col-lg-6"><div class="card"><div class="card-body p-2">{{ chart(fig, 'chart-' ~ loop.index) }}</div></div></div>
+  {% endfor %}
 </div>
 {% endmacro %}
